@@ -1,0 +1,14 @@
+certifi
+chardet
+cssselect
+et-xmlfile
+idna
+jdcal
+lxml
+openpyxl
+pymongo
+pyquery
+redis
+requests
+selenium
+urllib3
