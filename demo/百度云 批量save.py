@@ -29,7 +29,11 @@ def get_url_passwd(txt):
 
     res = []
     for i in data:
-        url, passwd = i.split("密码:")
+        print(i)
+        try:
+            url, passwd = i.split("密码:")
+        except:
+            url, passwd = i.split("密码：")
         res.append((url.strip(), passwd.strip()))
     if len(data) != len(res):
         raise Exception()

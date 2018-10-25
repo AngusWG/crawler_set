@@ -11,4 +11,6 @@ pyquery
 redis
 requests
 selenium
+six
 urllib3
+xmltodict
