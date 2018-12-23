@@ -2,13 +2,14 @@
 
 import os
 import sys
+import time
+
 import requests
 import xmltodict
 from six.moves import queue as Queue
 from threading import Thread
 import re
 import json
-
 
 # Setting timeout
 TIMEOUT = 10
@@ -25,6 +26,10 @@ MEDIA_NUM = 50
 # Numbers of downloading threads concurrently
 THREADS = 10
 
+# Do you like to dump each post as separate json (otherwise you have to extract from bulk xml files)
+# This option is for convenience for terminal users who would like to query e.g. with ./jq (https://stedolan.github.io/jq/)
+EACH_POST_AS_SEPARATE_JSON = False
+
 
 def video_hd_match():
     hd_pattern = re.compile(r'.*"hdUrl":("([^\s,]*)"|false),')
@@ -36,6 +41,7 @@ def video_hd_match():
                 return hd_match.group(2).replace('\\', '')
         except:
             return None
+
     return match
 
 
@@ -49,6 +55,7 @@ def video_default_match():
                 return default_match.group(1)
             except:
                 return None
+
     return match
 
 
@@ -163,7 +170,7 @@ class CrawlerScheduler(object):
             self.download_media(site)
 
     def download_media(self, site):
-        self.download_photos(site)
+        # self.download_photos(site)
         self.download_videos(site)
 
     def download_videos(self, site):
@@ -190,8 +197,11 @@ class CrawlerScheduler(object):
         start = START
         while True:
             media_url = base_url.format(site, medium_type, MEDIA_NUM, start)
-            response = requests.get(media_url,
-                                    proxies=self.proxies)
+
+            response = self.get_resp(media_url)
+            if response is False:
+                print("{} False ".format(media_url))
+                continue
             if response.status_code == 404:
                 print("Site %s does not exist" % site)
                 break
@@ -199,9 +209,21 @@ class CrawlerScheduler(object):
             try:
                 xml_cleaned = re.sub(u'[^\x20-\x7f]+',
                                      u'', response.content.decode('utf-8'))
+
+                response_file = "{0}/{0}_{1}_{2}_{3}.response.xml".format(site, medium_type, MEDIA_NUM, start)
+                with open(response_file, "w") as text_file:
+                    text_file.write(xml_cleaned)
+
                 data = xmltodict.parse(xml_cleaned)
                 posts = data["tumblr"]["posts"]["post"]
                 for post in posts:
+                    # by default it is switched to false to generate less files,
+                    # as anyway you can extract this from bulk xml files.
+                    if EACH_POST_AS_SEPARATE_JSON:
+                        post_json_file = "{0}/{0}_post_id_{1}.post.json".format(site, post['@id'])
+                        with open(post_json_file, "w") as text_file:
+                            text_file.write(json.dumps(post))
+
                     try:
                         # if post has photoset, walk into photoset for each photo
                         photoset = post["photoset"]["photo"]
@@ -219,6 +241,28 @@ class CrawlerScheduler(object):
                 continue
             except:
                 print("Unknown xml-vulnerabilities from URL %s" % media_url)
+                continue
+
+    def get_resp(self, media_url):
+        flag = 0
+        while True:
+            try:
+                response = requests.get(media_url,
+                                        proxies=self.proxies)
+                return response
+            except requests.exceptions.ProxyError as err:
+                if flag == 5:
+                    return False
+                print(err)
+                flag = flag + 1
+                time.sleep(20)
+                continue
+            except requests.exceptions.SSLError as err:
+                if flag == 5:
+                    return False
+                print(err)
+                flag = flag + 1
+                time.sleep(20)
                 continue
 
 
@@ -252,9 +296,9 @@ def parse_sites(filename):
         raw_sites = f.read().rstrip().lstrip()
 
     raw_sites = raw_sites.replace("\t", ",") \
-                         .replace("\r", ",") \
-                         .replace("\n", ",") \
-                         .replace(" ", ",")
+        .replace("\r", ",") \
+        .replace("\n", ",") \
+        .replace(" ", ",")
     raw_sites = raw_sites.split(",")
 
     sites = list()
