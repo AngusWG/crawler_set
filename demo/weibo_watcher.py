@@ -16,38 +16,13 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 import redis
+import requests
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium import webdriver
 
-log_path = os.getcwd() + '/logs/'
-log_name = log_path + "weibo"
-###
-
-formatter = logging.Formatter(
-    "-----> [%(asctime)s] [%(levelname)s] [%(filename)s<%(lineno)d>-%(module)s.%(funcName)s]: %(message)s")
-logging.basicConfig(
-    level=logging.INFO,
-    format="---> [%(filename)s] %(funcName)s: %(message)s",
-    # datefmt='%Y-%m-%d %H:%M:%S',
-    # filename='crawler_info.log',
-    # filemode='a'
-)
-# 定义RotatingFileHandler, 最多备份5个日志, 每个日志最大10M
-info_handler = RotatingFileHandler(log_name + '_info.log', mode='a', maxBytes=1024 * 1024 * 512, backupCount=5,
-                                   encoding='utf-8')
-info_handler.setLevel(logging.INFO)
-info_handler.setFormatter(formatter)
-logging.getLogger('').addHandler(info_handler)
-
-error_handler = RotatingFileHandler(log_name + '_error.log', mode='a', maxBytes=1024 * 1024 * 512, backupCount=5,
-                                    encoding='utf-8')
-error_handler.setLevel(logging.ERROR)
-error_handler.setFormatter(formatter)
-logging.getLogger('').addHandler(error_handler)
-
-logger = logging
 logging.getLogger("requests").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
+logger = logging.getLogger('')
 ###
 service_args = [
     '--ignore-ssl-errors=true',
@@ -60,15 +35,16 @@ dcap["phantomjs.page.settings.userAgent"] = "Mozilla/5.0 (Windows NT 10.0; WOW64
                                             "Chrome/63.0.3239.26 Safari/537.36 Core/" \
                                             "1.63.6716.400 QQBrowser/10.2.2214.40"
 dcap["phantomjs.page.settings.loadImages"] = True
-browser = webdriver.PhantomJS(service_args=service_args, desired_capabilities=dcap)
+browser = webdriver.PhantomJS("./phantomjs", service_args=service_args, desired_capabilities=dcap)
 
 # r = redis.Redis(host='localhost', port=6379)
 
 host_ip = socket.gethostbyname(socket.gethostname())
-if host_ip.startswith("192.168"):
-    r = redis.Redis(host='localhost', port=6379)
-else:
-    r = redis.Redis(host='localhost', port=6379, password="123456")
+# if host_ip.startswith("192.168"):
+#     r = redis.Redis(host='localhost', port=6379)
+# else:
+#     r = redis.Redis(host='localhost', port=6379)
+r = redis.Redis(host='ali.4yewu.cn', port=6379)
 
 
 def send_email():
@@ -124,23 +100,31 @@ def send_email():
     return
 
 
+def get_proxy():
+    return requests.get("http://ali.4yewu.cn:8080/get/").content
+
+
+def delete_proxy(proxy):
+    requests.get("http://ali.4yewu.cn:8080/delete/?proxy={}".format(proxy))
+
+
 def made_png(user_id):
     while True:
-        item = list(r.hgetall("代理池").keys())[0]
+        proxy = get_proxy()
+        proxy1 = proxy.decode().split(":")
         try:
-            ip = json.loads(item.decode().replace("'", '"'))
             browser.command_executor._commands['executePhantomScript'] = (
                 'POST', '/session/$sessionId/phantom/execute')
             browser.execute('executePhantomScript',
-                            {'script': '''phantom.setProxy({},{},{});'''.format(ip['ip'], ip['port'],
-                                                                                ip['type']),
+                            {'script': '''phantom.setProxy({},{},{});'''.format(proxy1[0], proxy1[1],
+                                                                                "http"),
                              'args': []})
             browser.get('https://m.weibo.com/u/{}'.format(user_id))
             browser.implicitly_wait(10)
             elements = browser.find_elements_by_xpath('//div[@class="weibo-text"]')
             break
         except Exception as err:
-            r.hdel("代理池", item)
+            delete_proxy(proxy)
             continue
     # browser.save_screenshot(str(int(time.time())) + ".png")
     texts = list()
@@ -157,7 +141,7 @@ def made_png(user_id):
             logger.info("截图完毕")
             r.delete(user_id)
             for a in texts:
-                r.hset(user_id, a, True)
+                r.hset(user_id, a, "True")
             break
     logger.info("{}扫描完成".format(user_id))
 
@@ -167,8 +151,12 @@ def made_png(user_id):
 # sudo apt-get install xfonts-wqy
 if __name__ == '__main__':
     while True:
-        made_png("2036565412")
-        made_png("1421647581")
-        made_png("1810507404")
-        send_email()
-        logger.info("一次扫描完成")
+        try:
+            made_png("2036565412")
+            made_png("1421647581")
+            made_png("1810507404")
+            send_email()
+            logger.info("一次扫描完成")
+            time.sleep(30)
+        except:
+            pass
