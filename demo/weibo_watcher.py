@@ -48,8 +48,8 @@ def send_email():
 
     # 创建一个带附件的实例
     message = MIMEMultipart()
-    message['From'] = Header("百度云", 'utf-8')
-    message['To'] = Header("你", 'utf-8')
+    message['From'] = from_addr
+    message['To'] = Header("zza", 'utf-8')
     subject = '微博更新通知'
     message['Subject'] = Header(subject, 'utf-8')
 
@@ -148,7 +148,7 @@ def server():
             made_png("1810507404")
             send_email()
             print("一次扫描完成")
-            time.sleep(30)
+            time.sleep(5)
         except Exception as err:
             print("Exception {}".format(err))
             pass
