@@ -156,5 +156,6 @@ def server():
             pass
 
 
+server()
 if __name__ == '__main__':
     server()
