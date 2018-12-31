@@ -99,7 +99,7 @@ def delete_proxy(proxy):
 
 
 def made_png(user_id):
-    print(f"start {user_id}")
+    print("start {}".format(user_id))
     while True:
         proxy = get_proxy()
         proxy1 = proxy.decode().split(":")
