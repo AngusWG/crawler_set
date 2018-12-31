@@ -99,6 +99,7 @@ def delete_proxy(proxy):
 
 
 def made_png(user_id):
+    print(f"start {user_id}")
     while True:
         proxy = get_proxy()
         proxy1 = proxy.decode().split(":")
@@ -148,9 +149,9 @@ def server():
             send_email()
             print("一次扫描完成")
             time.sleep(30)
-        except:
+        except Exception as err:
+            print("Exception {}".format(err))
             pass
-
 
 
 if __name__ == '__main__':
