@@ -20,9 +20,9 @@ import requests
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium import webdriver
 
-logging.getLogger("requests").setLevel(logging.WARNING)
-logging.getLogger("urllib3").setLevel(logging.WARNING)
-logger = logging.getLogger('')
+# logging.getLogger("requests").setLevel(logging.WARNING)
+# logging.getLogger("urllib3").setLevel(logging.WARNING)
+# logger = logging.getLogger('')
 ###
 service_args = [
     '--ignore-ssl-errors=true',
