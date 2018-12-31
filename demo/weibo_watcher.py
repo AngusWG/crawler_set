@@ -37,13 +37,7 @@ dcap["phantomjs.page.settings.userAgent"] = "Mozilla/5.0 (Windows NT 10.0; WOW64
 dcap["phantomjs.page.settings.loadImages"] = True
 browser = webdriver.PhantomJS("./phantomjs", service_args=service_args, desired_capabilities=dcap)
 
-# r = redis.Redis(host='localhost', port=6379)
-
 host_ip = socket.gethostbyname(socket.gethostname())
-# if host_ip.startswith("192.168"):
-#     r = redis.Redis(host='localhost', port=6379)
-# else:
-#     r = redis.Redis(host='localhost', port=6379)
 r = redis.Redis(host='ali.4yewu.cn', port=6379)
 
 
@@ -62,10 +56,6 @@ def send_email():
     msgAlternative = MIMEMultipart('alternative')
     message.attach(msgAlternative)
 
-    # mail_msg = """
-    # <p><img src="cid:image1"></p>
-    # """
-    # msgAlternative.attach(MIMEText(mail_msg, 'html', 'utf-8'))
     files2 = []
     files = os.listdir(".")
     for i in files:
@@ -73,7 +63,7 @@ def send_email():
             files2.append(i)
 
     if len(files2) == 0:
-        logger.info("没有更新")
+        print("没有更新")
         return
     for i in files2:
         # 指定图片为当前目录
@@ -94,9 +84,9 @@ def send_email():
         smtpObj = smtplib.SMTP_SSL(smtp_server, 465)  # SMTP协议默认端口是25
         smtpObj.login(from_addr, password)
         smtpObj.sendmail(from_addr, receivers, message.as_string())
-        logger.info("邮件发送成功")
+        print("邮件发送成功")
     except smtplib.SMTPException:
-        logger.info("Error: 无法发送邮件")
+        print("Error: 无法发送邮件")
     return
 
 
@@ -130,33 +120,38 @@ def made_png(user_id):
     texts = list()
     for i in elements:
         texts.append(i.text)
-    logger.info("获得最近{}条记录".format(len(texts)))
+    print("获得最近{}条记录".format(len(texts)))
     for text in texts:
         c = r.hget(user_id, text)
         if c is None:
-            logger.info("{} 有更新".format(user_id))
+            print("{} 有更新".format(user_id))
             file_name = "{}_{}.png".format(str(user_id), str(int(time.time())))
             time.sleep(3)
             browser.save_screenshot(file_name)
-            logger.info("截图完毕")
+            print("截图完毕")
             r.delete(user_id)
             for a in texts:
                 r.hset(user_id, a, "True")
             break
-    logger.info("{}扫描完成".format(user_id))
+    print("{}扫描完成".format(user_id))
 
 
-# ubuntu 中文乱码问题
-# https://blog.csdn.net/sinat_21302587/article/details/53585527
-# sudo apt-get install xfonts-wqy
-if __name__ == '__main__':
+def server():
+    # ubuntu 中文乱码问题
+    # https://blog.csdn.net/sinat_21302587/article/details/53585527
+    # sudo apt-get install xfonts-wqy
     while True:
         try:
             made_png("2036565412")
             made_png("1421647581")
             made_png("1810507404")
             send_email()
-            logger.info("一次扫描完成")
+            print("一次扫描完成")
             time.sleep(30)
         except:
             pass
+
+
+
+if __name__ == '__main__':
+    server()
