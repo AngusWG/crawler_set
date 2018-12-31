@@ -3,13 +3,10 @@
 # @Time    : 2018/8/19 15:01 
 # @author  : zza
 # @Email   : 740713651@qq.com
-import json
 import os
 import smtplib
-import logging
 import socket
 import time
-from logging.handlers import RotatingFileHandler
 from email.header import Header
 from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
@@ -63,7 +60,7 @@ def send_email():
             files2.append(i)
 
     if len(files2) == 0:
-        print("没有更新")
+        local_print("没有更新")
         return
     for i in files2:
         # 指定图片为当前目录
@@ -84,9 +81,9 @@ def send_email():
         smtpObj = smtplib.SMTP_SSL(smtp_server, 465)  # SMTP协议默认端口是25
         smtpObj.login(from_addr, password)
         smtpObj.sendmail(from_addr, receivers, message.as_string())
-        print("邮件发送成功")
+        local_print("邮件发送成功")
     except smtplib.SMTPException:
-        print("Error: 无法发送邮件")
+        local_print("Error: 无法发送邮件")
     return
 
 
@@ -98,8 +95,13 @@ def delete_proxy(proxy):
     requests.get("http://ali.4yewu.cn:8080/delete/?proxy={}".format(proxy))
 
 
+def local_print(*args):
+    print(time.strftime("[%Y-%m-%d %H:%M:%S]", time.localtime()), end=" ")
+    print(*args)
+
+
 def made_png(user_id):
-    print("start {}".format(user_id))
+    local_print("start {}".format(user_id))
     while True:
         proxy = get_proxy()
         proxy1 = proxy.decode().split(":")
@@ -121,20 +123,20 @@ def made_png(user_id):
     texts = list()
     for i in elements:
         texts.append(i.text)
-    print("获得最近{}条记录".format(len(texts)))
+    local_print("获得最近{}条记录".format(len(texts)))
     for text in texts:
         c = r.hget(user_id, text)
         if c is None:
-            print("{} 有更新".format(user_id))
+            local_print("{} 有更新".format(user_id))
             file_name = "{}_{}.png".format(str(user_id), str(int(time.time())))
             time.sleep(3)
             browser.save_screenshot(file_name)
-            print("截图完毕")
+            local_print("截图完毕")
             r.delete(user_id)
             for a in texts:
                 r.hset(user_id, a, "True")
             break
-    print("{}扫描完成".format(user_id))
+    local_print("{}扫描完成".format(user_id))
 
 
 def server():
@@ -147,10 +149,10 @@ def server():
             made_png("1421647581")
             made_png("1810507404")
             send_email()
-            print("一次扫描完成")
+            local_print("一次扫描完成")
             time.sleep(5)
         except Exception as err:
-            print("Exception {}".format(err))
+            local_print("Exception {}".format(err))
             pass
 
 
