@@ -17,7 +17,7 @@ header = {
 # 需要填写的参数！！！
 definition = "1920x1080"  # 填写分辨率 例如 2560x2560
 save_dir = r"C:\Users\74071\Pictures\wallpaper"  # 请避免中文
-start_page = 0  # 起始页码
+start_page = 0  # 起始页码 如果错误了  根据日志  填写start_page避免重复爬取
 end_page = 50  # 结束页码
 
 
