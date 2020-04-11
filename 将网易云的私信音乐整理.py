@@ -11,7 +11,7 @@
 然后运行脚本
 """
 import os
-
+import glob
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
 
@@ -19,13 +19,21 @@ song_dir = "tmp_save_dir"
 
 
 def init_driver():
+    driver_path = ""
+    if not os.path.exists("chromedriver.exe"):  # 无驱则需要下载
+        # 本地项目 复制驱动
+        if "crawler_set" in os.path.abspath(__file__):
+            driver_path = glob.glob('chromedriver.exe')[0]
+        else:  # 单个文件 下载驱动
+            pass
+
     user_cookies = "".join([os.path.expanduser('~'), r"\AppData\Local\Google\Chrome\User Data"])
 
     option = webdriver.ChromeOptions()
     option.add_argument("--user-data-dir={}".format(user_cookies))  # 设置成用户自己的数据目录
 
     try:
-        driver = webdriver.Chrome(options=option)
+        driver = webdriver.Chrome(driver_path, options=option)
         driver.implicitly_wait(5)
         return driver
     except WebDriverException:
