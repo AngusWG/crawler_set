@@ -87,7 +87,7 @@ def save_song(url):
     driver.get(url)
     driver.switch_to.frame("contentFrame")
     driver.find_element_by_xpath('//*[contains(text(), "收藏")]').click()
-    driver.find_element_by_xpath('//*[contains(text(), {}})]'.format(song_dir)).click()
+    driver.find_element_by_xpath('//*[contains(text(), "{}")]'.format(song_dir)).click()
 
 
 driver = init_driver()
